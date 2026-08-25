@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Paleta principal ──────────────────────────────────────────────── */
+  --color-arena:           #F5F0EA; /* fondo general cálido */
+  --color-tierra:          #7C4F2F; /* acción principal (botones, acentos) */
+  --color-blanco:          #FFFFFF; /* tarjetas y superficies blancas */
+  --color-bosque:          #2A5C2C; /* etiquetas de país */
+  --color-lust:            #B53A2F; /* errores y acciones destructivas */
+  --color-piedra:          #9B8D83; /* lightbox background, sombras */
+  --color-surface:         #FAF7F4; /* fondo de tarjeta levemente calido */
+
+  /* ── Tokens semánticos ─────────────────────────────────────────────── */
+  --color-foreground:       #1C1917;
+  --color-muted-foreground: #6B6059;
+  --color-surface-border:   #E0D8D0;
+}
