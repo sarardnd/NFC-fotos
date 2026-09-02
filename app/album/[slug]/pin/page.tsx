@@ -2,13 +2,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { PinEntry } from "@/components/pin-entry";
 import { getIsAdmin } from "@/lib/auth";
-import {
-  ACCESS_COOKIE_PREFIX,
-  MAX_PIN_ATTEMPTS,
-  TRIES_COOKIE_PREFIX,
-  readTriesToken,
-  verifyAccessToken,
-} from "@/lib/pin";
+import { ACCESS_COOKIE_PREFIX, getClientIpHash, verifyAccessToken } from "@/lib/pin";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function PinPage({
@@ -42,16 +36,21 @@ export default async function PinPage({
     redirect(`/album/${slug}`);
   }
 
-  // Comprobar intentos previos para mostrar la UI bloqueada directamente
-  const triesRaw = cookieStore.get(`${TRIES_COOKIE_PREFIX}${slug}`)?.value ?? "";
-  const isBlocked = readTriesToken(triesRaw, slug) >= MAX_PIN_ATTEMPTS;
+  // Comprobar bloqueo real en BD (por álbum + IP), no evadible borrando cookies
+  const ipHash = await getClientIpHash();
+  const { data: lockRows } = await supabase.rpc("check_pin_lock", {
+    p_album_id: album.id,
+    p_ip_hash: ipHash,
+  });
+  const lock = lockRows?.[0];
 
   return (
     <PinEntry
       slug={slug}
       albumName={album.name}
       albumEmoji={album.emoji}
-      isBlocked={isBlocked}
+      isBlocked={!!lock?.locked}
+      lockedUntil={lock?.locked_until ?? null}
     />
   );
 }

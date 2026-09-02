@@ -25,8 +25,6 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    // Log temporal para diagnosticar el fallo real en Vercel → Logs
-    console.error("signIn error:", error.message, error.status);
     // No revelar si el email existe o no (previene enumeración de usuarios)
     return { error: "Credenciales incorrectas. Inténtalo de nuevo." };
   }

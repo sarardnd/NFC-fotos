@@ -8,13 +8,22 @@ type Props = {
   albumName: string;
   albumEmoji: string;
   isBlocked: boolean;
+  lockedUntil: string | null;
 };
 
-const initial: PinState = { error: null, blocked: false };
+const initial: PinState = { error: null, blocked: false, lockedUntil: null };
 
-export function PinEntry({ slug, albumName, albumEmoji, isBlocked }: Props) {
+function formatRemaining(lockedUntil: string | null): string {
+  if (!lockedUntil) return "unos minutos";
+  const ms = new Date(lockedUntil).getTime() - Date.now();
+  const minutes = Math.max(1, Math.ceil(ms / 60000));
+  return `${minutes} minuto${minutes === 1 ? "" : "s"}`;
+}
+
+export function PinEntry({ slug, albumName, albumEmoji, isBlocked, lockedUntil }: Props) {
   const [state, formAction, pending] = useActionState(verifyAlbumPin, initial);
   const blocked = isBlocked || state.blocked;
+  const remaining = formatRemaining(state.lockedUntil ?? lockedUntil);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-arena px-4">
@@ -33,7 +42,7 @@ export function PinEntry({ slug, albumName, albumEmoji, isBlocked }: Props) {
               Demasiados intentos incorrectos.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Cierra el navegador y vuelve a intentarlo.
+              Vuelve a intentarlo en {remaining}.
             </p>
           </div>
         ) : (

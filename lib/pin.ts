@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { headers } from "next/headers";
 
 const SECRET = process.env.COOKIE_SECRET ?? "dev-secret-must-change-in-production";
 
@@ -71,29 +72,22 @@ export function verifyAccessToken(token: string, albumId: string): boolean {
   }
 }
 
-// ─── Cookie de intentos fallidos (por sesión) ─────────────────────────────────
+// ─── Rate-limit de intentos de PIN (servidor, por álbum + IP) ────────────────
+// El conteo vive en la BD (tabla pin_attempts vía RPC), no en cookies:
+// así no se puede evadir cerrando el navegador o borrando cookies.
 
-export const TRIES_COOKIE_PREFIX = "pin_tries_";
 export const MAX_PIN_ATTEMPTS = 2;
+export const LOCKOUT_MINUTES = 15;
 
-export function createTriesToken(slug: string, count: number): string {
-  const payload = Buffer.from(JSON.stringify({ slug, count })).toString("base64url");
-  return `${payload}.${sign(payload)}`;
+// Hash de la IP (nunca se guarda en claro) para poder identificar al
+// visitante sin almacenar su dirección real.
+export function hashIp(ip: string): string {
+  return createHmac("sha256", SECRET).update(ip).digest("hex");
 }
 
-export function readTriesToken(token: string, slug: string): number {
-  const parts = splitToken(token);
-  if (!parts) return 0;
-  const [payload, sig] = parts;
-  if (!verifySignature(payload, sig)) return 0;
-  try {
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString()) as {
-      slug: string;
-      count: number;
-    };
-    if (data.slug !== slug || typeof data.count !== "number") return 0;
-    return data.count;
-  } catch {
-    return 0;
-  }
+export async function getClientIpHash(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (h.get("x-real-ip") ?? "unknown");
+  return hashIp(ip);
 }
